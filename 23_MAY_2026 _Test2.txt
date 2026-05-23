@@ -1,0 +1,225 @@
+23_MAY_2026
+Solved:19
+Unsolved: 04
+
+
+1.
+List the Employee Name, their Department Name, and the Location Name for all employees.
+Ans: SELECT 
+    E.employee_name,
+    D.dept_name,
+    D.location_id
+FROM Employees E
+JOIN Departments D
+ON E.dept_id = D.dept_id;
+
+2.
+Retrieve the Project Name, Client Name, and the Total Hours Worked on that project, but only for projects managed by the 'Consulting' department.
+ans: SELECT 
+    P.project_name,
+    P.client_name,
+    SUM(A.hours_worked) AS total_hours
+FROM Projects P
+JOIN Departments D
+ON P.dept_id = D.dept_id
+JOIN Assignments A
+ON P.project_id = A.project_id
+WHERE D.dept_name = 'Consulting'
+GROUP BY P.project_name, P.client_name;
+
+3.
+Find the names of Employees who have worked on a project with Client Name 'GlobalTech Solutions'. List the Employee Name and Project Name.
+ANS: SELECT 
+    E.employee_name,
+    P.project_name
+FROM Employees E
+JOIN Assignments A
+ON E.employee_id = A.employee_id
+JOIN Projects P
+ON A.project_id = P.project_id
+WHERE P.client_name = 'GlobalTech Solutions';
+
+4.
+List all Departments that have no Employees currently assigned to them.
+ANS: SELECT 
+    D.dept_name
+FROM Departments D
+LEFT JOIN Employees E
+ON D.dept_id = E.dept_id
+WHERE E.employee_id IS NULL;
+
+5.
+Show the Manager Name, the Department Name they manage, and the total number of direct reports they have.
+ANS: SELECT 
+    M.employee_name AS manager_name,
+    D.dept_name,
+    COUNT(E.employee_id) AS total_reports
+FROM Employees E
+JOIN Employees M
+ON E.manager_id = M.employee_id
+JOIN Departments D
+ON M.dept_id = D.dept_id
+GROUP BY M.employee_name, D.dept_name;
+
+6.
+Calculate the Average Hours Worked per Employee across all projects. List the Employee Name and the average hours.
+ANS: SELECT 
+    E.employee_name,
+    AVG(A.hours_worked) AS avg_hours
+FROM Employees E
+JOIN Assignments A
+ON E.employee_id = A.employee_id
+GROUP BY E.employee_name;
+
+
+
+8.
+Identify the Client Name(s) whose projects have a total combined hours worked exceeding 500 hours.
+ANS: SELECT 
+    P.client_name,
+    SUM(A.hours_worked) AS total_hours
+FROM Projects P
+JOIN Assignments A
+ON P.project_id = A.project_id
+GROUP BY P.client_name
+HAVING SUM(A.hours_worked) > 500;
+
+9.
+For each Location, find the Department Name with the highest count of employees
+ANS: SELECT 
+    location_id,
+    dept_name,
+    emp_count
+FROM (
+    SELECT 
+        D.location_id,
+        D.dept_name,
+        COUNT(E.employee_id) AS emp_count,
+        RANK() OVER (
+            PARTITION BY D.location_id
+            ORDER BY COUNT(E.employee_id) DESC
+        ) AS rnk
+    FROM Departments D
+    LEFT JOIN Employees E
+    ON D.dept_id = E.dept_id
+    GROUP BY D.location_id, D.dept_name
+) X
+WHERE rnk = 1;
+
+10.
+Calculate the total number of employees assigned to each Project, but only include projects that have more than 5 employees assigned
+ANS: SELECT 
+    P.project_name,
+    COUNT(DISTINCT A.employee_id) AS total_employees
+FROM Projects P
+JOIN Assignments A
+ON P.project_id = A.project_id
+GROUP BY P.project_name
+HAVING COUNT(DISTINCT A.employee_id) > 5;
+
+
+
+12. Retrieve the Department Name(s) that have employees assigned to more than one project.
+ANS: SELECT DISTINCT
+    D.dept_name
+FROM Departments D
+JOIN Employees E
+ON D.dept_id = E.dept_id
+JOIN Assignments A
+ON E.employee_id = A.employee_id
+GROUP BY D.dept_name, E.employee_id
+HAVING COUNT(DISTINCT A.project_id) > 1;
+
+13.
+Write a query to list the Employee Name and Project Name for any employee who has worked less than 10 hours on a project.
+ANS: SELECT 
+    E.employee_name,
+    P.project_name
+FROM Employees E
+JOIN Assignments A
+ON E.employee_id = A.employee_id
+JOIN Projects P
+ON A.project_id = P.project_id
+WHERE A.hours_worked < 10;
+
+14.
+Find the Project Name(s) that have no assigned employees.
+ANS: SELECT 
+    P.project_name
+FROM Projects P
+LEFT JOIN Assignments A
+ON P.project_id = A.project_id
+WHERE A.assignment_id IS NULL;
+
+15.
+Select the Employee Name(s) whose salary is greater than the maximum salary in their own department.
+ANS: SELECT 
+    employee_name
+FROM Employees E1
+WHERE salary > (
+    SELECT MAX(salary)
+    FROM Employees E2
+    WHERE E1.dept_id = E2.dept_id
+      AND E1.employee_id <> E2.employee_id
+);
+
+Dates and MySQL Specific Functions
+
+
+18.
+Use the MySQL-specific IFNULL function to list all Employee Names. If an employee has no manager, display "CEO" instead of NULL.
+ANS: SELECT 
+    employee_name,
+    IFNULL(manager_id, 'CEO') AS manager
+FROM Employees;
+
+19.
+Find the top 3 Departments based on the total hours worked by all their employees across all projects.
+ANS: SELECT 
+    D.dept_name,
+    SUM(A.hours_worked) AS total_hours
+FROM Departments D
+JOIN Employees E
+ON D.dept_id = E.dept_id
+JOIN Assignments A
+ON E.employee_id = A.employee_id
+GROUP BY D.dept_name
+ORDER BY total_hours DESC
+LIMIT 3;
+
+20.
+Display the Project Name and a status ("High Activity" if total hours > 300, "Normal" otherwise) using the CASE statement.
+ANS: SELECT 
+    P.project_name,
+    CASE
+        WHEN SUM(A.hours_worked) > 300 THEN 'High Activity'
+        ELSE 'Normal'
+    END AS status
+FROM Projects P
+LEFT JOIN Assignments A
+ON P.project_id = A.project_id
+GROUP BY P.project_name;
+
+Complex Scenarios and Performance
+21.
+List the Employee Name and their Manager's Name, even if the employee has no manager, or if a potential manager has no employees reporting to them.
+ANS:SELECT 
+    E.employee_name AS employee,
+    M.employee_name AS manager
+FROM Employees E
+LEFT JOIN Employees M
+ON E.manager_id = M.employee_id;
+
+
+
+23.
+Find the Employee Name(s) who are assigned to the same projects as Employee ID 101.
+ANS: SELECT DISTINCT
+    E.employee_name
+FROM Assignments A1
+JOIN Assignments A2
+ON A1.project_id = A2.project_id
+JOIN Employees E
+ON A2.employee_id = E.employee_id
+WHERE A1.employee_id = 101
+AND A2.employee_id <> 101;
